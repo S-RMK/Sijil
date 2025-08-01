@@ -1,20 +1,29 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('cloudinary').v2;
+
+// Load environment variables from .env file
+require('dotenv').config();
+
+// Configure Cloudinary with your credentials
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Set up Multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Save files to the 'uploads' directory
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    // Generate a unique filename to prevent conflicts
-    cb(null, Date.now() + '-' + file.originalname);
+// --- Cloudinary Storage Configuration ---
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'express-file-project', // Optional: A folder in your Cloudinary account
+    allowed_formats: ['jpg', 'png', 'pdf', 'doc', 'docx'],
+    transformation: [{ width: 500, crop: 'limit' }]
   }
 });
 
@@ -22,7 +31,6 @@ const upload = multer({ storage: storage });
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // This line is crucial for viewing files
 
 // --- Routes ---
 
@@ -31,39 +39,34 @@ app.post('/upload', upload.single('document'), (req, res) => {
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
   }
-  res.send(`File uploaded successfully! View it at: <a href="/uploads/${req.file.filename}">${req.file.filename}</a>`);
+  // The file is now on Cloudinary! We get the URL from req.file.path
+  res.send(`File uploaded successfully! View it at: <a href="${req.file.path}" target="_blank">${req.file.filename}</a>`);
 });
 
-// Route to get a list of all uploaded files
-app.get('/files', (req, res) => {
-    fs.readdir(path.join(__dirname, 'uploads'), (err, files) => {
-        if (err) {
-            return res.status(500).send('Unable to scan files.');
+// Route to get a list of all uploaded files from Cloudinary
+app.get('/files', async (req, res) => {
+    try {
+        const files = await cloudinary.search
+            .expression('folder:express-file-project') // Match the folder name
+            .execute();
+
+        if (files.resources.length === 0) {
+            return res.status(200).send('<h1>No files uploaded yet.</h1>');
         }
 
-        // Generate an HTML list of file links
         let fileList = '<h1>Uploaded Files</h1><ul>';
-        files.forEach(file => {
-            fileList += `<li><a href="/download/${file}">${file}</a> <a href="/uploads/${file}" target="_blank">(View)</a></li>`;
+        files.resources.forEach(file => {
+            fileList += `<li><a href="${file.secure_url}" target="_blank">${file.public_id}</a></li>`;
         });
         fileList += '</ul>';
         res.send(fileList);
-    });
+    } catch (err) {
+        console.error('Error fetching files from Cloudinary:', err);
+        res.status(500).send('Error fetching files.');
+    }
 });
 
-// Route to handle file downloads
-app.get('/download/:filename', (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.join(__dirname, 'uploads', filename);
-
-    // Use res.download to send the file as an attachment
-    res.download(filePath, (err) => {
-        if (err) {
-            console.error('Download error:', err);
-            res.status(404).send('File not found or an error occurred.');
-        }
-    });
-});
+// We no longer need a separate download route, as Cloudinary URLs can be viewed/downloaded directly.
 
 // Start the server
 app.listen(PORT, () => {
