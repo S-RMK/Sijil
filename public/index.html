@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload and Download</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 2em;
+            max-width: 800px;
+            margin: auto;
+        }
+        form {
+            border: 1px solid #ccc;
+            padding: 1em;
+            margin-bottom: 2em;
+            border-radius: 8px;
+        }
+        input[type="file"], button {
+            margin-top: 1em;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload a Document</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <label for="document">Choose a file to upload:</label>
+        <input type="file" name="document" id="document" required>
+        <button type="submit">Upload File</button>
+    </form>
+
+    <hr>
+
+    <h1>Available Documents</h1>
+    <a href="/files">View all uploaded files</a>
+</body>
+</html>
