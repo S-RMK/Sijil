@@ -21,9 +21,8 @@ const PORT = process.env.PORT || 3000;
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'express-file-project', // Optional: A folder in your Cloudinary account
-    allowed_formats: ['jpg', 'png', 'pdf', 'doc', 'docx'],
-    transformation: [{ width: 500, crop: 'limit' }]
+    folder: 'express-file-project',
+    allowed_formats: ['jpg', 'png', 'pdf', 'doc', 'docx']
   }
 });
 
