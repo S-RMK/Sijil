@@ -46,7 +46,7 @@ app.post('/upload', upload.single('document'), (req, res) => {
 app.get('/files', async (req, res) => {
     try {
         const files = await cloudinary.search
-            .expression('folder:express-file-project') // Match the folder name
+            .expression('folder:express-file-project')
             .execute();
 
         if (files.resources.length === 0) {
@@ -55,6 +55,7 @@ app.get('/files', async (req, res) => {
 
         let fileList = '<h1>Uploaded Files</h1><ul>';
         files.resources.forEach(file => {
+            console.log("Cloudinary URL:", file.secure_url); // <--- ADD THIS LINE
             fileList += `<li><a href="${file.secure_url}" target="_blank">${file.public_id}</a></li>`;
         });
         fileList += '</ul>';
